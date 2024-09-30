@@ -2,6 +2,7 @@ package session
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/ipfs/boxo/bitswap/client/internal"
@@ -403,7 +404,9 @@ func (s *Session) handlePeriodicSearch(ctx context.Context) {
 // findMorePeers attempts to find more peers for a session by searching for
 // providers for the given Cid
 func (s *Session) findMorePeers(ctx context.Context, c cid.Cid) {
+	// println("### findMorePeers")
 	go func(k cid.Cid) {
+		start := time.Now()
 		ctx, span := internal.StartSpan(ctx, "Session.FindMorePeers")
 		defer span.End()
 		for p := range s.providerFinder.FindProvidersAsync(ctx, k) {
@@ -412,6 +415,8 @@ func (s *Session) findMorePeers(ctx context.Context, c cid.Cid) {
 			span.AddEvent("FoundPeer")
 			s.sws.Update(p, nil, []cid.Cid{c}, nil)
 		}
+		latency := time.Since(start)
+		fmt.Printf("findMorePeers(%s) took %f seconds\n", c.String(), latency.Seconds())
 	}(c)
 }
 
